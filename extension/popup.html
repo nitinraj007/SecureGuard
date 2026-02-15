@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelShield Premium</title>
+    
+    <!-- External Assets -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #050810;
+            --card: rgba(15, 23, 42, 0.6);
+            --primary: #6366f1;
+            --accent: #06b6d4;
+            --danger: #f43f5e;
+            --text: #f8fafc;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+
+        body {
+            width: 320px;
+            height: 450px;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .app-container {
+            padding: 24px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+        }
+
+        .bg-glow {
+            position: absolute; top: -50px; right: -50px; width: 150px; height: 150px;
+            background: var(--primary); filter: blur(80px); opacity: 0.3; z-index: 0;
+        }
+
+        /* Header */
+        header { display: flex; justify-content: space-between; align-items: center; z-index: 10; margin-bottom: 25px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .logo-core {
+            width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), #4f46e5);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); overflow: hidden;
+        }
+        .logo-core img {
+            width: 24px; height: 24px; object-fit: contain;
+        }
+        .brand-text h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+        .brand-text h1 span { color: var(--primary); }
+        .version { font-size: 9px; color: #64748b; font-weight: 700; letter-spacing: 1px; }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; position: relative; }
+        .status-dot.online { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .status-dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        /* Visualizer Area */
+        .visualizer {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; margin-bottom: 20px;
+        }
+
+        .scanner-ring {
+            width: 140px; height: 140px; border-radius: 50%;
+            border: 2px solid rgba(99, 102, 241, 0.1); position: relative;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.5s ease;
+        }
+
+        .scanner-ring.inactive {
+            border-color: rgba(100, 116, 139, 0.2);
+        }
+
+        .inner-ring {
+            position: absolute; width: 110px; height: 110px; border-radius: 50%;
+            border: 2px dashed var(--primary); animation: rotate 10s linear infinite; opacity: 0.5;
+        }
+
+        .scanner-ring.inactive .inner-ring {
+            animation-play-state: paused;
+            border-color: #64748b;
+        }
+
+        /* Central Logo in Ring */
+        .ring-logo {
+            width: 50px;
+            height: 50px;
+            z-index: 5;
+            filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5));
+            transition: all 0.5s ease;
+        }
+        .inactive .ring-logo {
+            filter: grayscale(1) opacity(0.3);
+        }
+
+        .core-text { text-align: center; z-index: 5; margin-top: 10px; }
+        #state-text { font-size: 12px; font-weight: 700; letter-spacing: 2px; color: var(--primary); text-shadow: 0 0 10px rgba(99, 102, 241, 0.5); }
+        .inactive #state-text { color: #64748b; text-shadow: none; }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Controls */
+        .controls {
+            background: var(--card); border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px); border-radius: 16px; padding: 18px; margin-bottom: 20px;
+        }
+
+        .control-row { display: flex; justify-content: space-between; align-items: center; }
+        .title { display: block; font-size: 13px; font-weight: 600; color: #fff; }
+        .desc { display: block; font-size: 10px; color: #94a3b8; }
+
+        /* Neon Switch */
+        .neon-switch { position: relative; width: 50px; height: 26px; }
+        .neon-switch input { opacity: 0; width: 0; height: 0; }
+        .neon-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #1e293b; transition: .4s; border-radius: 34px;
+        }
+        .neon-slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .neon-slider { background-color: var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+        input:checked + .neon-slider:before { transform: translateX(24px); }
+
+        /* Button */
+        .glass-btn {
+            width: 100%; padding: 14px; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+            color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+            cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;
+            text-decoration: none;
+        }
+        .glass-btn:hover { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); transform: translateY(-2px); }
+
+        .laser-line {
+            position: absolute; width: 100%; height: 1px; background: var(--primary);
+            top: 0; left: 0; opacity: 0.2; animation: moveLaser 4s linear infinite;
+        }
+        @keyframes moveLaser { 0% { top: 0; } 100% { top: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background Elements -->
+        <div class="bg-glow"></div>
+        <div class="laser-line"></div>
+        
+        <!-- Header -->
+        <header>
+            <div class="brand">
+                <div class="logo-core">
+                    <img src="shield.png" alt="S">
+                </div>
+                <div class="brand-text">
+                    <h1>Secure<span>Guard</span></h1>
+                    <span class="version">V3.5 PRO</span>
+                </div>
+            </div>
+            <div id="status-indicator" class="status-dot online"></div>
+        </header>
+
+        <!-- Visualization -->
+        <div class="visualizer">
+            <div id="ring-container" class="scanner-ring">
+                <div class="inner-ring"></div>
+                <img src="shield.png" class="ring-logo" alt="Shield">
+            </div>
+            <div class="core-text">
+                <span id="state-text">SECURE</span>
+            </div>
+        </div>
+
+        <!-- System Controls -->
+        <section class="controls">
+            <div class="control-row">
+                <div class="info">
+                    <span class="title">Active Shielding</span>
+                    <span class="desc" id="desc-text">AI Tone Analysis Active</span>
+                </div>
+                <label class="neon-switch">
+                    <input type="checkbox" id="toggle-switch" checked>
+                    <span class="neon-slider"></span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Actions -->
+        <footer class="actions">
+            <button id="btn-dashboard" class="glass-btn">
+                <i class="fa-solid fa-terminal"></i>
+                OPEN COMMAND CENTER
+            </button>
+        </footer>
+    </div>
+
+    <!-- 
+        CRITICAL FIX: Inline scripts are forbidden in Manifest V3. 
+        We have moved all logic to popup.js to solve the CSP error.
+    -->
+    <script src="popup.js"></script>
+</body>
+</html>
