@@ -116,7 +116,7 @@
             <form onsubmit="handleLogin(event)" class="space-y-4 relative z-20">
                 <div class="relative group">
                     <i class="fa-solid fa-user absolute left-4 top-3.5 text-slate-500 group-focus-within:text-accent transition-colors"></i>
-                    <input type="text" id="username" placeholder="IDENTIFIER" class="w-full bg-black/50 border border-slate-700 rounded-lg px-10 py-3 text-sm text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(0,255,153,0.3)] transition-all font-mono placeholder:text-slate-600">
+                    <input type="email" id="username" placeholder="ADMIN EMAIL" class="w-full bg-black/50 border border-slate-700 rounded-lg px-10 py-3 text-sm text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(0,255,153,0.3)] transition-all font-mono placeholder:text-slate-600">
                 </div>
                 
                 <div class="relative group">
@@ -191,7 +191,7 @@
                             <span id="backend-status-dot" class="absolute bottom-0 right-0 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full"></span>
                         </div>
                         <div>
-                            <p class="text-white text-sm font-semibold">System Admin</p>
+                            <p class="text-white text-sm font-semibold" id="admin-email-display">System Admin</p>
                             <p class="text-xs text-slate-500" id="backend-status-text">Connecting...</p>
                         </div>
                     </div>
@@ -383,6 +383,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // Import Firebase Auth
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // --- MATRIX EFFECT ---
         const canvas = document.getElementById("matrix");
@@ -416,55 +418,7 @@
         startMatrix();
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 
-        // --- LOGIN LOGIC ---
-        window.handleLogin = (e) => {
-            e.preventDefault();
-            const u = document.getElementById('username').value;
-            const p = document.getElementById('password').value;
-            const btn = document.getElementById('loginBtn');
-            const err = document.getElementById('login-error');
-
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> VERIFYING...`;
-            
-            setTimeout(() => {
-                if(u === 'admin' && p === '1234') {
-                    // Success
-                    localStorage.setItem('sentinelAuth', 'true');
-                    document.getElementById('login-overlay').classList.add('hidden-fade');
-                    const app = document.getElementById('app-container');
-                    app.classList.remove('hidden');
-                    setTimeout(() => app.classList.remove('opacity-0'), 100);
-                    cancelAnimationFrame(animationId); // Stop matrix to save resources
-                } else {
-                    // Fail
-                    btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> AUTHENTICATE`;
-                    err.classList.remove('hidden');
-                    err.classList.add('animate-pulse');
-                }
-            }, 1500);
-        };
-
-        window.handleLogout = () => {
-            localStorage.removeItem('sentinelAuth');
-            location.reload();
-        };
-        
-        // Auto-login check
-        if(localStorage.getItem('sentinelAuth') === 'true') {
-             document.getElementById('login-overlay').style.display = 'none';
-             const app = document.getElementById('app-container');
-             app.classList.remove('hidden');
-             setTimeout(() => app.classList.remove('opacity-0'), 10);
-             cancelAnimationFrame(animationId);
-        }
-
-        // --- SIDEBAR LOGIC ---
-        window.toggleSidebar = () => {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('open');
-        };
-
-        // --- FIREBASE & APP LOGIC (PRESERVED) ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCTxvGydmaTlgJuYsJhdbfjToJY5XGwEzg",
             authDomain: "sentinelspherelite.firebaseapp.com",
@@ -478,6 +432,85 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        // --- AUTHENTICATION LOGIC (REAL FIREBASE AUTH) ---
+        
+        // Handle Login Submission
+        window.handleLogin = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const err = document.getElementById('login-error');
+
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> VERIFYING...`;
+            err.classList.add('hidden');
+            
+            signInWithEmailAndPassword(auth, u, p)
+                .then((userCredential) => {
+                    // Signed in 
+                    const user = userCredential.user;
+                    console.log("Logged in:", user.email);
+                    // UI will update via onAuthStateChanged
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.error("Login error", errorCode, errorMessage);
+                    
+                    btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> AUTHENTICATE`;
+                    err.classList.remove('hidden');
+                    err.classList.add('animate-pulse');
+                    
+                    if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
+                        err.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> INVALID CREDENTIALS`;
+                    } else if (errorCode === 'auth/too-many-requests') {
+                        err.innerHTML = `<i class="fa-solid fa-clock"></i> TOO MANY ATTEMPTS. TRY LATER.`;
+                    } else {
+                        err.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ACCESS DENIED: ${errorCode}`;
+                    }
+                });
+        };
+
+        // Handle Logout
+        window.handleLogout = () => {
+            signOut(auth).then(() => {
+                location.reload();
+            }).catch((error) => {
+                console.error("Logout Error", error);
+            });
+        };
+        
+        // Listen to Auth State Changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                document.getElementById('login-overlay').classList.add('hidden-fade');
+                const appContainer = document.getElementById('app-container');
+                appContainer.classList.remove('hidden');
+                
+                // Update Admin Profile
+                const adminDisplay = document.getElementById('admin-email-display');
+                if(adminDisplay) adminDisplay.innerText = user.email || "System Admin";
+
+                setTimeout(() => appContainer.classList.remove('opacity-0'), 100);
+                cancelAnimationFrame(animationId); // Stop matrix to save resources
+            } else {
+                // User is signed out
+                const overlay = document.getElementById('login-overlay');
+                overlay.classList.remove('hidden-fade');
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('app-container').classList.add('opacity-0');
+                if(!animationId) startMatrix(); // Restart matrix if stopped
+            }
+        });
+
+        // --- SIDEBAR LOGIC ---
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        };
 
         // --- MEDIA GUARD TOGGLE ---
         const mediaToggle = document.getElementById('media-toggle');
@@ -509,7 +542,7 @@
         // --- BACKEND HEALTH CHECK ---
         async function checkBackend() {
             try {
-                const res = await fetch('http://127.0.0.1:8000/');
+                const res = await fetch('http://127.0.0.1:8000/docs'); // Using /docs as check
                 if (res.ok) {
                     document.getElementById('backend-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full pulse-soft";
                     document.getElementById('backend-status-text').innerText = "System Online";
