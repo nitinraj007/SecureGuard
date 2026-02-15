@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SentinelSphere v3.5 | Multi-Modal Defense</title>
+    <title>SecureGuard v3 | Multi-Modal AI Defense</title>
 
     <!-- FAVICON -->
     <link rel="icon" type="image/png" href="shield.png">
@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- TAILWIND CONFIG -->
     <script>
@@ -20,16 +21,21 @@
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    fontFamily: { 
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
                     colors: {
-                        dark: '#0B0F19',
+                        dark: '#050a14',
                         glass: '#1E293B',
                         primary: '#6366f1',
-                        accent: '#06b6d4',
+                        accent: '#00ff99',
                         danger: '#f43f5e',
                         warning: '#f59e0b',
-                        success: '#10b981',
-                        purple: '#8b5cf6'
+                        success: '#10b981'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -38,22 +44,41 @@
 
     <!-- CUSTOM STYLES -->
     <style>
-        body { background-color: #0B0F19; color: #cbd5e1; overflow-x: hidden; }
+        body { background-color: #050a14; color: #cbd5e1; overflow-x: hidden; }
 
-        /* Glassmorphism */
+        /* --- LOGIN & MATRIX STYLES --- */
+        #login-overlay { position: fixed; inset: 0; z-index: 9999; background: black; transition: opacity 1s ease, visibility 1s; }
+        #login-overlay.hidden-fade { opacity: 0; visibility: hidden; pointer-events: none; }
+        
+        canvas#matrix { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        .login-card {
+            background: rgba(5, 10, 20, 0.85);
+            border: 1px solid rgba(0, 255, 153, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 40px rgba(0, 255, 153, 0.1);
+            position: relative; z-index: 10;
+        }
+
+        .glitch { position: relative; color: #00ff99; font-weight: bold; }
+        .glitch::before, .glitch::after { content: attr(data-text); position: absolute; left: 0; width: 100%; overflow: hidden; opacity: 0.7; }
+        .glitch::before { animation: glitchTop 1s infinite linear alternate-reverse; color: #00ffff; clip-path: inset(0 0 80% 0); transform: translate(-2px,-2px); }
+        .glitch::after { animation: glitchBottom 1s infinite linear alternate-reverse; color: #ff00ff; clip-path: inset(80% 0 0 0); transform: translate(2px,2px); }
+        
+        @keyframes glitchTop { 0% { transform: translate(-2px,-2px); } 100% { transform: translate(2px,2px); } }
+        @keyframes glitchBottom { 0% { transform: translate(2px,2px); } 100% { transform: translate(-2px,-2px); } }
+
+        /* --- DASHBOARD STYLES --- */
         .glass-panel {
             background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        /* Animations */
-        .animate-enter { animation: fadeUp 0.5s ease-out forwards; opacity: 0; }
+        .animate-enter { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(20px); } }
-
-        .pulse-soft { animation: pulseSoft 2s infinite; }
-        @keyframes pulseSoft { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -61,34 +86,79 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
 
-        /* Meters */
-        .meter-container { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; position: relative; margin-top: 8px; }
-        .meter-fill { height: 100%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        /* Media Meter */
-        .df-meter-bg { background: #0f172a; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px; }
-        .df-meter-fill { height: 100%; transition: width 1s ease; border-radius: 3px; }
-
         /* Toggle Switch */
         .toggle-checkbox:checked { right: 0; border-color: #10b981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+
+        /* Mobile Sidebar Transition */
+        .sidebar-mobile { transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+        .sidebar-mobile.open { transform: translateX(0); }
     </style>
 </head>
-<body class="antialiased selection:bg-primary selection:text-white">
+<body class="antialiased selection:bg-accent selection:text-black">
 
-    <div class="flex min-h-screen relative">
+    <!-- ==================== 1. LOGIN OVERLAY ==================== -->
+    <div id="login-overlay" class="flex items-center justify-center">
+        <canvas id="matrix"></canvas>
+        
+        <div class="login-card w-full max-w-sm mx-4 p-8 rounded-2xl text-center">
+            <div class="mb-6 flex justify-center">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-cyan-500 p-0.5 animate-pulse-slow">
+                    <div class="w-full h-full bg-black rounded-2xl flex items-center justify-center">
+                        <img src="shield.png" class="w-8 h-8 opacity-90" alt="Shield">
+                    </div>
+                </div>
+            </div>
+            
+            <h1 class="glitch text-3xl mb-2 font-mono tracking-tighter" data-text="SECURE_GUARD">SECURE_GUARD</h1>
+            <p class="text-emerald-500/80 text-xs font-mono mb-8 tracking-widest uppercase">Restricted Access // Level 5</p>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4 relative z-20">
+                <div class="relative group">
+                    <i class="fa-solid fa-user absolute left-4 top-3.5 text-slate-500 group-focus-within:text-accent transition-colors"></i>
+                    <input type="text" id="username" placeholder="IDENTIFIER" class="w-full bg-black/50 border border-slate-700 rounded-lg px-10 py-3 text-sm text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(0,255,153,0.3)] transition-all font-mono placeholder:text-slate-600">
+                </div>
+                
+                <div class="relative group">
+                    <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-500 group-focus-within:text-accent transition-colors"></i>
+                    <input type="password" id="password" placeholder="PASSPHRASE" class="w-full bg-black/50 border border-slate-700 rounded-lg px-10 py-3 text-sm text-white focus:outline-none focus:border-accent focus:shadow-[0_0_15px_rgba(0,255,153,0.3)] transition-all font-mono placeholder:text-slate-600">
+                </div>
+
+                <button type="submit" id="loginBtn" class="w-full bg-accent/90 hover:bg-accent text-black font-bold py-3.5 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-accent/20 flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-fingerprint"></i> AUTHENTICATE
+                </button>
+            </form>
+            <p id="login-error" class="text-danger text-xs mt-4 font-mono hidden"><i class="fa-solid fa-triangle-exclamation"></i> ACCESS DENIED</p>
+        </div>
+    </div>
+
+    <!-- ==================== 2. MAIN DASHBOARD APP ==================== -->
+    <div id="app-container" class="flex min-h-screen relative hidden opacity-0 transition-opacity duration-1000">
+
+        <!-- MOBILE HEADER -->
+        <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-dark/80 backdrop-blur-md border-b border-white/10 z-50 flex items-center justify-between px-6">
+            <div class="flex items-center gap-3">
+                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg">
+                    <img src="shield.png" alt="S" class="w-4 h-4 object-contain">
+                </div>
+                <span class="font-bold text-white tracking-tight">SecureGuard</span>
+            </div>
+            <button onclick="toggleSidebar()" class="text-white p-2 rounded-lg hover:bg-white/10">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
 
         <!-- SIDEBAR -->
-        <aside class="fixed inset-y-0 left-0 w-72 glass-panel border-r-0 z-40 hidden md:flex flex-col justify-between h-full transition-transform">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass-panel border-r-0 z-40 sidebar-mobile md:translate-x-0 md:flex flex-col justify-between h-full bg-dark/95 backdrop-blur-xl md:bg-transparent md:backdrop-filter-none pt-20 md:pt-0">
             <div class="p-8">
-                <!-- Branding -->
-                <div class="flex items-center gap-3 mb-10">
+                <!-- Branding (Desktop) -->
+                <div class="hidden md:flex items-center gap-3 mb-10">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg shadow-primary/30">
                         <img src="shield.png" alt="S" class="w-6 h-6 object-contain">
                     </div>
                     <div>
-                        <h1 class="text-white font-bold text-xl tracking-tight">SentinelSphere</h1>
-                        <p class="text-xs text-slate-500 font-bold tracking-widest text-accent uppercase">v3.5 MULTI-MODAL</p>
+                        <h1 class="text-white font-bold text-xl tracking-tight">SecureGuard</h1>
+                        <p class="text-[10px] text-slate-500 font-bold tracking-widest text-accent uppercase">v3.5 INTELLIGENCE</p>
                     </div>
                 </div>
 
@@ -112,87 +182,96 @@
                 </nav>
             </div>
 
-            <!-- Admin Profile & Status -->
+            <!-- Admin Profile & Logout -->
             <div class="p-6 border-t border-white/5 bg-black/20">
-                <div class="flex items-center gap-4">
-                    <div class="relative">
-                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" class="w-10 h-10 rounded-full border-2 border-slate-700">
-                        <span id="backend-status-dot" class="absolute bottom-0 right-0 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full"></span>
-                    </div>
-                    <div>
-                        <p class="text-white text-sm font-semibold">System Admin</p>
-                        <p class="text-xs text-slate-500" id="backend-status-text">Connecting...</p>
+                <div class="flex items-center justify-between mb-4">
+                     <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <img src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" class="w-10 h-10 rounded-full border-2 border-slate-700">
+                            <span id="backend-status-dot" class="absolute bottom-0 right-0 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full"></span>
+                        </div>
+                        <div>
+                            <p class="text-white text-sm font-semibold">System Admin</p>
+                            <p class="text-xs text-slate-500" id="backend-status-text">Connecting...</p>
+                        </div>
                     </div>
                 </div>
+                <button onclick="handleLogout()" class="w-full py-2 rounded-lg border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/10 transition-colors uppercase tracking-wider">
+                    <i class="fa-solid fa-power-off mr-2"></i> Terminate Session
+                </button>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
-        <main class="w-full md:ml-72 p-6 md:p-10 transition-all duration-500">
+        <!-- MAIN CONTENT AREA -->
+        <main class="w-full md:ml-72 p-6 md:p-10 pt-24 md:pt-10 transition-all duration-500">
 
             <!-- Top Header -->
-            <header class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6 animate-enter">
+            <header class="flex flex-col xl:flex-row md:items-center justify-between mb-10 gap-6 animate-enter">
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-1" id="page-title">Dashboard</h2>
-                    <p class="text-slate-400 text-sm">Real-time Anti-Bullying & Deepfake Defense</p>
+                    <p class="text-slate-400 text-sm">Real-time Multi-Modal Intelligence</p>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex flex-wrap items-center gap-4">
                     <!-- Digital Clock -->
-                    <div class="glass-panel px-5 py-2 rounded-xl border border-white/5 flex items-center gap-3 shadow-lg shadow-black/20">
+                    <div class="glass-panel px-5 py-2 rounded-xl border border-white/5 flex items-center gap-3 shadow-lg shadow-black/20 grow sm:grow-0 justify-center">
                         <i class="fa-regular fa-clock text-primary animate-pulse"></i>
                         <div class="font-mono text-xl font-bold text-white tracking-widest tabular-nums" id="digital-clock">00:00:00</div>
                         <div class="text-xs text-slate-400 font-bold uppercase tracking-wide" id="ampm">AM</div>
                     </div>
 
                     <!-- System Badge -->
-                    <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3 border-emerald-500/30">
+                    <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3 border-emerald-500/30 grow sm:grow-0 justify-center">
                         <span class="relative flex h-3 w-3">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                         </span>
-                        <span class="text-xs font-bold text-emerald-400 tracking-wider hidden sm:block">SHIELD ACTIVE</span>
+                        <span class="text-xs font-bold text-emerald-400 tracking-wider">SYSTEM ACTIVE</span>
                     </div>
                 </div>
             </header>
 
             <!-- 1. DASHBOARD OVERVIEW -->
             <div id="view-dashboard" class="view-section space-y-8 animate-enter">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="glass-panel p-6 rounded-2xl hover:border-primary/50 transition-all group">
-                        <div class="flex justify-between items-start mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl hover:border-primary/50 transition-all group relative overflow-hidden">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-primary/20 rounded-full blur-2xl group-hover:bg-primary/30 transition-all"></div>
+                        <div class="flex justify-between items-start mb-4 relative z-10">
                             <div class="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors"><i class="fa-solid fa-eye text-xl"></i></div>
                         </div>
-                        <h3 class="text-3xl font-bold text-white mb-1" id="stat-scanned">0</h3>
-                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Content Scanned</p>
+                        <h3 class="text-3xl font-bold text-white mb-1 relative z-10" id="stat-scanned">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider relative z-10">Total Scanned</p>
                     </div>
-                    <div class="glass-panel p-6 rounded-2xl hover:border-purple/50 transition-all group">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i class="fa-solid fa-mask text-xl"></i></div>
+                    <div class="glass-panel p-6 rounded-2xl hover:border-danger/50 transition-all group relative overflow-hidden">
+                         <div class="absolute -right-6 -top-6 w-24 h-24 bg-danger/20 rounded-full blur-2xl group-hover:bg-danger/30 transition-all"></div>
+                        <div class="flex justify-between items-start mb-4 relative z-10">
+                            <div class="p-3 rounded-xl bg-danger/10 text-danger group-hover:bg-danger group-hover:text-white transition-colors"><i class="fa-solid fa-user-secret text-xl"></i></div>
                         </div>
-                        <h3 class="text-3xl font-bold text-white mb-1" id="stat-deepfakes">0</h3>
-                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Deepfakes Blocked</p>
+                        <h3 class="text-3xl font-bold text-white mb-1 text-danger relative z-10" id="stat-deepfakes">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider relative z-10">Deepfakes Detected</p>
                     </div>
-                    <div class="glass-panel p-6 rounded-2xl hover:border-danger/50 transition-all group">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="p-3 rounded-xl bg-danger/10 text-danger group-hover:bg-danger group-hover:text-white transition-colors"><i class="fa-solid fa-ban text-xl"></i></div>
+                    <div class="glass-panel p-6 rounded-2xl hover:border-accent/50 transition-all group relative overflow-hidden">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-accent/20 rounded-full blur-2xl group-hover:bg-accent/30 transition-all"></div>
+                        <div class="flex justify-between items-start mb-4 relative z-10">
+                            <div class="p-3 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-black transition-colors"><i class="fa-solid fa-gauge-high text-xl"></i></div>
                         </div>
-                        <h3 class="text-3xl font-bold text-white mb-1 text-danger" id="stat-abuse">0</h3>
-                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Bullying/NSFW</p>
+                        <h3 class="text-3xl font-bold text-white mb-1 text-accent relative z-10" id="stat-velocity">0.0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider relative z-10">Avg Velocity</p>
                     </div>
-                    <div class="glass-panel p-6 rounded-2xl hover:border-warning/50 transition-all group">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="glass-panel p-6 rounded-2xl hover:border-warning/50 transition-all group relative overflow-hidden">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-warning/20 rounded-full blur-2xl group-hover:bg-warning/30 transition-all"></div>
+                        <div class="flex justify-between items-start mb-4 relative z-10">
                             <div class="p-3 rounded-xl bg-yellow-500/10 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors"><i class="fa-solid fa-fire text-xl"></i></div>
                         </div>
-                        <h3 class="text-3xl font-bold text-white mb-1 text-warning" id="stat-streak">0</h3>
-                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Aggression Streak</p>
+                        <h3 class="text-3xl font-bold text-white mb-1 text-warning relative z-10" id="stat-streak">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider relative z-10">Max Aggression</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 glass-panel p-6 rounded-2xl">
                         <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <i class="fa-solid fa-layer-group text-primary"></i> Live Threat Vectors
+                            <i class="fa-solid fa-layer-group text-primary"></i> Multi-Modal Risk Analysis
                         </h3>
                         <div class="h-72 w-full"><canvas id="multiModalChart"></canvas></div>
                     </div>
@@ -205,17 +284,16 @@
 
             <!-- 2. MEDIA GUARD VIEW -->
             <div id="view-media" class="view-section hidden space-y-8 animate-enter">
-
                 <!-- MASTER TOGGLE -->
-                <div class="glass-panel p-6 rounded-2xl flex justify-between items-center border border-white/10">
+                <div class="glass-panel p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-center border border-white/10 gap-4">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved text-primary"></i> Media Shield</h3>
-                        <p class="text-sm text-slate-400">Deepfake, NSFW & Cyberbullying Protection</p>
+                        <p class="text-sm text-slate-400">Deepfake & OCR detection for Images/Reels</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest" id="media-status-text">ENABLED</span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest" id="media-status-text">DISABLED</span>
                         <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="toggle" id="media-toggle" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <input type="checkbox" name="toggle" id="media-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
                             <label for="media-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
                         </div>
                     </div>
@@ -223,19 +301,19 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="glass-panel p-6 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-transparent">
-                        <h3 class="text-white font-bold text-lg mb-2">Images Scanned</h3>
+                        <h3 class="text-white font-bold text-lg mb-2">Images Analyzed</h3>
                         <div class="text-3xl font-bold text-primary" id="stat-img-count">0</div>
-                        <div class="text-xs text-slate-400 mt-1">Real-time Extension Feed</div>
+                        <div class="text-xs text-slate-400 mt-1">Deepfake & Manipulation Check</div>
                     </div>
                     <div class="glass-panel p-6 rounded-2xl bg-gradient-to-br from-purple-900/40 to-transparent">
-                        <h3 class="text-white font-bold text-lg mb-2">Reels/Videos</h3>
+                        <h3 class="text-white font-bold text-lg mb-2">Videos Processed</h3>
                         <div class="text-3xl font-bold text-purple-400" id="stat-vid-count">0</div>
-                        <div class="text-xs text-slate-400 mt-1">Frame Extraction Analysis</div>
+                        <div class="text-xs text-slate-400 mt-1">Frame Extraction + Audio OCR</div>
                     </div>
                     <div class="glass-panel p-6 rounded-2xl bg-gradient-to-br from-red-900/40 to-transparent border border-danger/20">
-                        <h3 class="text-white font-bold text-lg mb-2">Active Threats</h3>
+                        <h3 class="text-white font-bold text-lg mb-2">Deepfake Alerts</h3>
                         <div class="text-3xl font-bold text-danger" id="stat-media-alerts">0</div>
-                        <div class="text-xs text-slate-400 mt-1">Deepfake + Abuse + Bullying</div>
+                        <div class="text-xs text-slate-400 mt-1">High Confidence Fakes</div>
                     </div>
                 </div>
 
@@ -244,9 +322,8 @@
                         <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
                         Live Media Analysis Stream
                     </h3>
-                    <!-- Dynamic Media Grid -->
                     <div id="media-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="text-slate-500 text-sm col-span-full text-center py-10">Waiting for media submissions from extension...</div>
+                        <div class="text-slate-500 text-sm col-span-full text-center py-10">Waiting for media submissions...</div>
                     </div>
                 </div>
             </div>
@@ -255,11 +332,11 @@
             <div id="view-behavior" class="view-section hidden space-y-8 animate-enter">
                 <div class="glass-panel p-8 rounded-2xl border-l-4 border-primary">
                     <h3 class="text-2xl font-bold text-white mb-2">Psychological Pressure Index</h3>
-                    <p class="text-slate-400 text-sm mb-6">Composite score measuring sustained aggression across platforms.</p>
+                    <p class="text-slate-400 text-sm mb-6">Composite score measuring sustained aggression.</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                         <div>
                             <div class="flex justify-between text-sm mb-2 text-slate-300"><span>Network Stress Level</span><span class="text-white font-bold" id="pressure-val">Calculating...</span></div>
-                            <div class="meter-container"><div id="pressure-bar" class="meter-fill bg-gradient-to-r from-emerald-500 via-yellow-500 to-red-500" style="width: 0%"></div></div>
+                            <div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div id="pressure-bar" class="h-full bg-gradient-to-r from-emerald-500 via-yellow-500 to-red-500 transition-all duration-1000" style="width: 0%"></div></div>
                         </div>
                         <div class="glass-panel p-4 rounded-xl text-center bg-white/5">
                             <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Target Shift Pattern</div>
@@ -276,16 +353,18 @@
             <!-- 4. USERS VIEW -->
             <div id="view-users" class="view-section hidden space-y-6 animate-enter">
                 <div class="glass-panel rounded-2xl overflow-hidden">
-                    <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                        <h3 class="font-bold text-white text-lg">High Risk Users (v3.5 Scoring)</h3>
-                        <input type="text" placeholder="Search..." class="bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-primary">
+                    <div class="p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <h3 class="font-bold text-white text-lg">High Risk Users (v3 Scoring)</h3>
+                        <input type="text" placeholder="Search..." class="w-full sm:w-auto bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-all">
                     </div>
-                    <table class="w-full text-left text-sm text-slate-400">
-                        <thead class="bg-black/20 text-xs uppercase font-semibold text-slate-300">
-                            <tr><th class="px-6 py-4">User ID</th><th class="px-6 py-4">Platform</th><th class="px-6 py-4">Risk Score</th><th class="px-6 py-4">Status</th></tr>
-                        </thead>
-                        <tbody id="user-table-body" class="divide-y divide-white/5"></tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-400">
+                            <thead class="bg-black/20 text-xs uppercase font-semibold text-slate-300">
+                                <tr><th class="px-6 py-4">User</th><th class="px-6 py-4">Platform</th><th class="px-6 py-4">Risk</th><th class="px-6 py-4">Streak</th><th class="px-6 py-4">Velocity</th><th class="px-6 py-4">Status</th></tr>
+                            </thead>
+                            <tbody id="user-table-body" class="divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -293,18 +372,99 @@
             <div id="view-logs" class="view-section hidden space-y-6 animate-enter">
                 <div class="glass-panel rounded-2xl p-6">
                     <h3 class="font-bold text-white text-lg mb-4">Deep Log Inspector</h3>
-                    <div id="live-feed" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+                    <div id="live-feed" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"></div>
                 </div>
             </div>
 
         </main>
     </div>
 
+    <!-- JAVASCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase Config
+        // --- MATRIX EFFECT ---
+        const canvas = document.getElementById("matrix");
+        const ctx = canvas.getContext("2d");
+        let animationId;
+
+        function startMatrix() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            const drops = Array(Math.floor(columns)).fill(1);
+
+            function draw() {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#00ff99";
+                ctx.font = fontSize + "px monospace";
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+                animationId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+        startMatrix();
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+        // --- LOGIN LOGIC ---
+        window.handleLogin = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const err = document.getElementById('login-error');
+
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> VERIFYING...`;
+            
+            setTimeout(() => {
+                if(u === 'admin' && p === '1234') {
+                    // Success
+                    localStorage.setItem('sentinelAuth', 'true');
+                    document.getElementById('login-overlay').classList.add('hidden-fade');
+                    const app = document.getElementById('app-container');
+                    app.classList.remove('hidden');
+                    setTimeout(() => app.classList.remove('opacity-0'), 100);
+                    cancelAnimationFrame(animationId); // Stop matrix to save resources
+                } else {
+                    // Fail
+                    btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> AUTHENTICATE`;
+                    err.classList.remove('hidden');
+                    err.classList.add('animate-pulse');
+                }
+            }, 1500);
+        };
+
+        window.handleLogout = () => {
+            localStorage.removeItem('sentinelAuth');
+            location.reload();
+        };
+        
+        // Auto-login check
+        if(localStorage.getItem('sentinelAuth') === 'true') {
+             document.getElementById('login-overlay').style.display = 'none';
+             const app = document.getElementById('app-container');
+             app.classList.remove('hidden');
+             setTimeout(() => app.classList.remove('opacity-0'), 10);
+             cancelAnimationFrame(animationId);
+        }
+
+        // --- SIDEBAR LOGIC ---
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        };
+
+        // --- FIREBASE & APP LOGIC (PRESERVED) ---
         const firebaseConfig = {
             apiKey: "AIzaSyCTxvGydmaTlgJuYsJhdbfjToJY5XGwEzg",
             authDomain: "sentinelspherelite.firebaseapp.com",
@@ -329,6 +489,13 @@
             updateToggleUI(isActive);
         });
 
+        onValue(ref(db, 'config/media_guard_active'), (snap) => {
+            const isActive = snap.val();
+            const state = isActive === null ? true : isActive;
+            mediaToggle.checked = state;
+            updateToggleUI(state);
+        });
+
         function updateToggleUI(isActive) {
             if(isActive) {
                 mediaStatusText.innerText = "ENABLED";
@@ -342,18 +509,13 @@
         // --- BACKEND HEALTH CHECK ---
         async function checkBackend() {
             try {
-                const res = await fetch('http://127.0.0.1:8000/docs');
+                const res = await fetch('http://127.0.0.1:8000/');
                 if (res.ok) {
                     document.getElementById('backend-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full pulse-soft";
                     document.getElementById('backend-status-text').innerText = "System Online";
                     document.getElementById('backend-status-text').className = "text-xs text-emerald-400";
                 }
-            } catch (e) { 
-                console.log("Backend offline"); 
-                document.getElementById('backend-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full";
-                document.getElementById('backend-status-text').innerText = "Offline";
-                document.getElementById('backend-status-text').className = "text-xs text-red-400";
-            }
+            } catch (e) { console.log("Backend offline"); }
         }
         setInterval(checkBackend, 5000); checkBackend();
 
@@ -380,13 +542,8 @@
         const multiChart = new Chart(ctxMulti, {
             type: 'bar',
             data: {
-                labels: ['Text Toxicity', 'Deepfake Prob', 'Visual Abuse', 'OCR Text Tox'],
-                datasets: [{ 
-                    label: 'Risk Intensity', 
-                    data: [0,0,0,0], 
-                    backgroundColor: ['#6366f1', '#a855f7', '#f43f5e', '#f59e0b'], 
-                    borderRadius: 6 
-                }]
+                labels: ['Text Toxicity', 'Deepfake (Img)', 'Deepfake (Vid)', 'Audio Tox', 'Behavioral'],
+                datasets: [{ label: 'Risk Intensity', data: [0,0,0,0,0], backgroundColor: ['#6366f1', '#ec4899', '#8b5cf6', '#f59e0b', '#10b981'], borderRadius: 6 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
         });
@@ -394,7 +551,7 @@
         const ctxRiskDist = document.getElementById('riskDistChart').getContext('2d');
         const riskDistChart = new Chart(ctxRiskDist, {
             type: 'doughnut',
-            data: { labels: ['Calm', 'Aggressive', 'Critical'], datasets: [{ data: [1, 0, 0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderWidth: 0 }] },
+            data: { labels: ['Calm', 'Aggressive', 'Escalating'], datasets: [{ data: [1, 0, 0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderWidth: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
         });
 
@@ -409,7 +566,38 @@
         let imageCache = {}, videoCache = {};
         let averageTextRisk = 0;  
 
-        // --- RENDER MEDIA FEED ---
+        // --- Users Logic ---
+        onValue(ref(db, 'users'), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            const users = Object.entries(data).map(([k, v]) => ({ id: k, ...v }));
+
+            document.getElementById('stat-scanned').innerText = users.reduce((a,c) => a + (c.total_scanned||0), 0).toLocaleString();
+
+            const maxStreak = Math.max(...users.map(u => u.behavioral_metrics?.aggression_streak || 0), 0);
+            document.getElementById('stat-streak').innerText = maxStreak;
+            const avgVel = users.reduce((a,c) => a + (c.behavioral_metrics?.toxicity_velocity||0), 0) / (users.length || 1);
+            document.getElementById('stat-velocity').innerText = avgVel.toFixed(2);
+
+            const pressure = (maxStreak * 10) + (avgVel * 100);
+            const pressurePct = Math.min(pressure, 100);
+            document.getElementById('pressure-bar').style.width = `${pressurePct}%`;
+            document.getElementById('pressure-val').innerText = pressure > 80 ? 'CRITICAL' : 'NORMAL';
+
+            riskDistChart.data.datasets[0].data = [
+                users.filter(u => u.risk_level === 'Calm').length,
+                users.filter(u => u.risk_level === 'Aggressive').length,
+                users.filter(u => u.risk_level === 'Escalating').length
+            ];
+            riskDistChart.update();
+
+            document.getElementById('user-table-body').innerHTML = users.sort((a,b) => b.risk_score - a.risk_score).slice(0, 15).map(u => {
+                let badge = u.risk_level === 'Escalating' ? 'text-rose-400 bg-rose-500/10 animate-pulse' : (u.risk_level === 'Aggressive' ? 'text-yellow-400 bg-yellow-500/10' : 'text-emerald-400 bg-emerald-500/10');
+                return `<tr class="hover:bg-white/5 border-b border-white/5"><td class="px-6 py-4 text-xs font-mono">${u.id.substring(0,8)}...</td><td class="px-6 py-4 uppercase text-xs font-bold text-slate-300">${u.platform || 'WEB'}</td><td class="px-6 py-4 font-bold text-white">${u.risk_score}</td><td class="px-6 py-4 text-warning font-mono">${u.behavioral_metrics?.aggression_streak || 0}</td><td class="px-6 py-4 text-slate-400 font-mono">${(u.behavioral_metrics?.toxicity_velocity || 0).toFixed(2)}</td><td class="px-6 py-4"><span class="${badge} px-3 py-1 rounded-full text-xs font-bold">${u.risk_level}</span></td></tr>`;
+            }).join('');
+        });
+
+        // --- Media Analysis Logic ---
         const renderMedia = (images = {}, videos = {}) => {
             const imgList = Object.values(images || {});
             const vidList = Object.values(videos || {});
@@ -417,95 +605,108 @@
 
             document.getElementById('stat-img-count').innerText = imgList.length;
             document.getElementById('stat-vid-count').innerText = vidList.length;
-            
-            // Count incidents
-            const threats = allMedia.filter(m => m.authenticity_label !== 'Real').length;
-            const abuseCount = allMedia.filter(m => m.abuse_probability > 50 || m.ocr_text_toxicity > 0.6).length;
-            
-            document.getElementById('stat-media-alerts').innerText = threats;
-            document.getElementById('stat-abuse').innerText = abuseCount;
-            document.getElementById('stat-deepfakes').innerText = allMedia.filter(m => m.deepfake_probability > 50).length;
+            const fakes = allMedia.filter(m => m.authenticity_label === 'Deepfake' || m.authenticity_label === 'Suspicious').length;
+            document.getElementById('stat-deepfakes').innerText = fakes;
+            document.getElementById('stat-media-alerts').innerText = fakes;
 
-            // Chart Data Computation
-            const avgDeepfake = allMedia.reduce((a,c) => a + (c.deepfake_probability||0), 0) / (allMedia.length||1);
-            const avgAbuse = allMedia.reduce((a,c) => a + (c.abuse_probability||0), 0) / (allMedia.length||1);
-            const avgOcr = allMedia.reduce((a,c) => a + ((c.ocr_text_toxicity||0)*100), 0) / (allMedia.length||1);
-            
-            multiChart.data.datasets[0].data = [averageTextRisk, avgDeepfake, avgAbuse, avgOcr];
+            // Chart Updates
+            const imgRisk = imgList.reduce((a,c) => a + (c.deepfake_probability || 0), 0) / (imgList.length || 1);
+            const vidRisk = vidList.reduce((a,c) => a + (c.deepfake_score || 0), 0) / (vidList.length || 1);
+            const audRisk = vidList.reduce((a,c) => a + ((c.audio_toxicity || 0) * 100), 0) / (vidList.length || 1);
+            multiChart.data.datasets[0].data = [averageTextRisk, imgRisk, vidRisk, audRisk, 40];
             multiChart.update();
 
             const container = document.getElementById('media-feed');
             if(allMedia.length === 0) {
-                container.innerHTML = '<div class="text-slate-500 text-sm col-span-full text-center py-10">Waiting for extension data...</div>';
+                container.innerHTML = '<div class="text-slate-500 text-sm col-span-full text-center py-10">No media analyzed yet. Upload to backend to see results.</div>';
                 return;
             }
 
             container.innerHTML = allMedia.map(m => {
                 const isVideo = m.media_type === 'video';
-                const label = m.authenticity_label || 'Real';
+                const score = isVideo ? m.deepfake_score : m.deepfake_probability;
+                let label = m.authenticity_label;
+                let displayLabel = "Unknown";
+                let badgeColor = "bg-slate-700 text-white";
+                let severityLevel = "Low";
+                let severityColor = "text-emerald-400";
+
+                if (score > 85) { severityLevel = 'Critical'; severityColor = 'text-danger'; }
+                else if (score > 60) { severityLevel = 'High'; severityColor = 'text-orange-500'; }
+                else if (score > 30) { severityLevel = 'Medium'; severityColor = 'text-yellow-400'; }
+
+                if (label === 'Real') {
+                    displayLabel = isVideo ? 'Normal Reel' : 'Normal Pic';
+                    badgeColor = 'bg-success/20 text-success border border-success/30';
+                } else if (label === 'Suspicious') {
+                    displayLabel = 'Suspicious Media';
+                    badgeColor = 'bg-warning/20 text-warning border border-warning/30';
+                } else {
+                    displayLabel = isVideo ? 'Deepfake Reel' : 'Deepfake Image';
+                    badgeColor = 'bg-danger/20 text-danger border border-danger/30';
+                }
+
                 const icon = isVideo ? 'fa-film' : 'fa-image';
 
-                // Determine Styling
-                let badgeColor = "bg-success/20 text-success border-success/30";
-                let borderColor = "border-white/5";
-                
-                if (label.includes('Deepfake')) {
-                    badgeColor = "bg-purple-500/20 text-purple-400 border-purple-500/30";
-                    borderColor = "border-purple-500/50";
-                } 
-                if (label.includes('Abusive') || label.includes('Weaponized')) {
-                    badgeColor = "bg-danger/20 text-danger border-danger/30";
-                    borderColor = "border-danger/50 shadow-[0_0_15px_rgba(244,63,94,0.1)]";
+                // Video chunk details
+                let chunkDetails = '';
+                if (isVideo) {
+                    const perChunk = m.per_chunk || {};
+                    const dfChunks = perChunk.deepfake ? Object.entries(perChunk.deepfake) : [];
+                    const audioChunks = perChunk.audio ? Object.entries(perChunk.audio) : [];
+                    chunkDetails = `
+                    <div class="mt-3 text-xs border-t border-white/5 pt-2">
+                        <details class="group">
+                            <summary class="cursor-pointer text-primary group-hover:text-white transition-colors flex items-center gap-2"><i class="fa-solid fa-list-ul"></i> View chunk details</summary>
+                            <div class="mt-2 space-y-2 pl-2 border-l border-white/10">
+                                ${dfChunks.map(([idx, s]) => `<div class="flex justify-between"><span>Chunk ${idx}:</span><span class="${s > 50 ? 'text-danger' : 'text-success'}">Deepfake ${s}%</span></div>`).join('')}
+                                ${audioChunks.map(([idx, data]) => `<div class="flex justify-between"><span>Chunk ${idx} audio:</span><span class="${data.toxicity > 0.5 ? 'text-danger' : 'text-success'}">Toxicity ${(data.toxicity*100).toFixed(0)}%</span></div><div class="text-slate-400 italic truncate" title="${data.transcript}">"${data.transcript}"</div>`).join('')}
+                            </div>
+                        </details>
+                    </div>`;
                 }
 
                 return `
-                <div class="glass-panel p-5 rounded-2xl border ${borderColor} transition-all relative overflow-hidden group">
+                <div class="glass-panel p-5 rounded-2xl border ${label === 'Deepfake' ? 'border-danger/50' : 'border-white/5'} hover:bg-white/5 transition-all">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
                                 <i class="fa-solid ${icon} text-lg"></i>
                             </div>
                             <div>
-                                <div class="text-sm font-bold text-white uppercase">${isVideo ? 'Reel/Video' : 'Social Image'}</div>
-                                <div class="text-[10px] text-slate-500 font-mono">${new Date(m.timestamp).toLocaleTimeString()}</div>
+                                <div class="text-sm font-bold text-white uppercase">${displayLabel}</div>
+                                <div class="text-[10px] text-slate-500 font-mono">Severity: <span class="${severityColor}">${severityLevel}</span></div>
                             </div>
                         </div>
-                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded border ${badgeColor}">${label}</span>
+                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded ${badgeColor}">${label}</span>
                     </div>
-
-                    <div class="space-y-3 mb-4">
-                        <!-- Deepfake Meter -->
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1 text-slate-400 uppercase tracking-wider">
-                                <span>Deepfake Probability</span>
-                                <span class="text-white font-bold">${(m.deepfake_probability||0).toFixed(1)}%</span>
-                            </div>
-                            <div class="df-meter-bg">
-                                <div class="df-meter-fill ${(m.deepfake_probability > 50) ? 'bg-purple-500' : 'bg-slate-600'}" style="width: ${m.deepfake_probability}%"></div>
-                            </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs mb-1 text-slate-400">
+                            <span>Artificial Probability</span>
+                            <span class="text-white font-bold">${score ? score.toFixed(1) : '0.0'}%</span>
                         </div>
-
-                        <!-- Abuse Meter -->
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1 text-slate-400 uppercase tracking-wider">
-                                <span>Bullying / NSFW</span>
-                                <span class="text-white font-bold">${(m.abuse_probability||0).toFixed(1)}%</span>
-                            </div>
-                            <div class="df-meter-bg">
-                                <div class="df-meter-fill ${(m.abuse_probability > 50) ? 'bg-danger' : 'bg-slate-600'}" style="width: ${m.abuse_probability}%"></div>
-                            </div>
+                        <div class="df-meter-bg bg-black/50 h-1.5 rounded-full overflow-hidden">
+                            <div class="df-meter-fill h-full rounded-full ${score > 50 ? 'bg-danger' : 'bg-success'}" style="width: ${score}%"></div>
                         </div>
                     </div>
-
-                    <!-- OCR Section -->
-                    <div class="bg-black/40 p-3 rounded-lg text-xs border border-white/5">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-slate-500"><i class="fa-solid fa-font text-accent mr-1"></i> Text Analysis</span>
-                            <span class="${(m.ocr_text_toxicity > 0.6) ? 'text-danger' : 'text-success'} font-bold">${((m.ocr_text_toxicity||0)*100).toFixed(0)}% Toxic</span>
+                    ${isVideo ? `
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-black/30 p-2 rounded">
+                            <div class="text-slate-500 mb-1">Audio Risk</div>
+                            <div class="font-bold text-white">${(m.audio_toxicity * 100).toFixed(0)}%</div>
                         </div>
-                        <div class="text-slate-300 italic truncate" title="${m.extracted_text || 'No text detected'}">
-                            "${m.extracted_text ? m.extracted_text.substring(0, 35) + '...' : 'No text detected'}"
+                        <div class="bg-black/30 p-2 rounded">
+                            <div class="text-slate-500 mb-1">Transcript</div>
+                            <div class="font-bold text-white truncate" title="${m.transcript || ''}">${m.transcript ? m.transcript.substring(0,20)+'...' : 'N/A'}</div>
                         </div>
+                    </div>${chunkDetails}` : `
+                    <div class="bg-black/30 p-2 rounded text-xs mt-2">
+                        <div class="text-slate-500 mb-1">OCR Text Toxicity</div>
+                        <div class="font-bold text-white">${(m.ocr_text_toxicity * 100).toFixed(0)}%</div>
+                    </div>`}
+                    <div class="mt-3 flex justify-between items-center border-t border-white/5 pt-2">
+                        <span class="text-[10px] text-slate-600 font-mono">${new Date(m.timestamp).toLocaleTimeString()}</span>
+                        <button class="text-[10px] text-primary hover:text-white transition-colors">View Analysis</button>
                     </div>
                 </div>`;
             }).join('');
@@ -520,48 +721,22 @@
             const data = snapshot.val();
             if (!data) return;
             const logs = Object.values(data).reverse();
-            
-            // Render Logs
             document.getElementById('live-feed').innerHTML = logs.map(l => {
-                let borderColor = l.risk_level === 'Aggressive' ? 'border-danger/40' : 'border-white/5';
-                return `<div class="p-4 glass-panel rounded-xl border ${borderColor} hover:bg-white/5 transition-all group">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold bg-slate-700 text-white px-2 py-0.5 rounded uppercase tracking-wider">${l.platform || 'WEB'}</span>
-                            <span class="text-xs text-slate-500">${new Date(l.timestamp).toLocaleTimeString()}</span>
-                        </div>
-                        <span class="text-xs font-bold ${l.risk_level === 'Aggressive' ? 'text-danger' : 'text-emerald-400'}">${l.risk_level}</span>
-                    </div>
-                    <p class="text-slate-300 text-sm mb-2 italic">"${l.content}"</p>
-                    <div class="text-[10px] text-slate-500 font-mono">Toxicity Score: ${l.risk_score}%</div>
-                </div>`;
+                const reasons = l.explanation?.reason?.join(", ") || "Manual Flag";
+                let borderColor = l.risk_level === 'Escalating' ? 'border-danger/40' : 'border-white/5';
+                return `<div class="p-4 glass-panel rounded-xl border ${borderColor} hover:bg-white/5 transition-all group"><div class="flex justify-between items-start mb-2"><div class="flex items-center gap-2"><span class="text-[10px] font-bold bg-slate-700 text-white px-2 py-0.5 rounded uppercase tracking-wider">${l.platform || 'WEB'}</span><span class="text-xs text-slate-500">${new Date(l.timestamp).toLocaleTimeString()}</span></div><span class="text-xs font-bold ${l.risk_level === 'Escalating' ? 'text-danger' : 'text-primary'}">${l.risk_level}</span></div><p class="text-slate-300 text-sm mb-3 italic">"${l.content}"</p><div class="bg-black/30 p-2 rounded text-xs text-slate-400"><i class="fa-solid fa-robot mr-1 text-primary"></i> <span class="font-mono">${reasons}</span></div></div>`;
             }).join('');
 
-            // Calculate Stats for Users Table
-            const uniqueUsers = {};
-            logs.forEach(l => {
-                if(!uniqueUsers[l.user_id]) uniqueUsers[l.user_id] = { id: l.user_id, platform: l.platform, maxRisk: 0 };
-                if(l.risk_score > uniqueUsers[l.user_id].maxRisk) uniqueUsers[l.user_id].maxRisk = l.risk_score;
-            });
-
-            document.getElementById('user-table-body').innerHTML = Object.values(uniqueUsers).map(u => {
-                let badgeClass = u.maxRisk > 70 ? 'text-rose-400 bg-rose-500/10' : 'text-emerald-400 bg-emerald-500/10';
-                return `<tr class="hover:bg-white/5 border-b border-white/5">
-                    <td class="px-6 py-4 text-xs font-mono">${u.id}</td>
-                    <td class="px-6 py-4 uppercase text-xs font-bold text-slate-300">${u.platform}</td>
-                    <td class="px-6 py-4 font-bold text-white">${u.maxRisk}%</td>
-                    <td class="px-6 py-4"><span class="${badgeClass} px-3 py-1 rounded-full text-xs font-bold">${u.maxRisk > 70 ? 'CRITICAL' : 'SAFE'}</span></td>
-                </tr>`;
-            }).join('');
-
-            document.getElementById('stat-scanned').innerText = logs.length.toLocaleString();
-
-            // Avg Text Risk for Chart
-            const scores = logs.map(l => l.risk_score);
-            averageTextRisk = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
+            const riskScores = logs.map(l => l.risk_score).filter(s => !isNaN(s));
+            if (riskScores.length > 0) averageTextRisk = riskScores.reduce((a,b) => a + b, 0) / riskScores.length;
+            else averageTextRisk = 0;
             
-            // Trigger chart update
-            renderMedia(imageCache, videoCache);
+            // Trigger Chart Update
+            const imgRisk = Object.values(imageCache).reduce((a,c) => a + (c.deepfake_probability || 0), 0) / (Object.keys(imageCache).length || 1);
+            const vidRisk = Object.values(videoCache).reduce((a,c) => a + (c.deepfake_score || 0), 0) / (Object.keys(videoCache).length || 1);
+            const audRisk = Object.values(videoCache).reduce((a,c) => a + ((c.audio_toxicity || 0) * 100), 0) / (Object.keys(videoCache).length || 1);
+            multiChart.data.datasets[0].data = [averageTextRisk, imgRisk, vidRisk, audRisk, 40];
+            multiChart.update();
         });
 
         // Tab Logic
@@ -569,7 +744,11 @@
             document.querySelectorAll('.view-section').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-enter'); });
             const active = document.getElementById(`view-${id}`);
             if(active) { active.classList.remove('hidden'); void active.offsetWidth; active.classList.add('animate-enter'); }
-            document.getElementById('page-title').innerText = id === 'media' ? 'Media Guard' : (id.charAt(0).toUpperCase() + id.slice(1));
+            document.getElementById('page-title').innerText = id.charAt(0).toUpperCase() + id.slice(1);
+            
+            // Close mobile sidebar if open
+            document.getElementById('sidebar').classList.remove('open');
+            
             document.querySelectorAll('.nav-item').forEach(btn => btn.className = 'nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent');
             const activeBtn = document.getElementById(`nav-${id}`);
             if(activeBtn) activeBtn.className = 'nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium bg-primary/10 text-white border border-primary/20 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all';
