@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+transformers
+torch
+torchvision
+firebase-admin
+pydantic
+requests
+opencv-python
+easyocr
+Pillow
+python-multipart
+scipy
+librosa
+soundfile
+numpy

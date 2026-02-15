@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelSphere v3.5 | Multi-Modal Defense</title>
+
+    <!-- FAVICON -->
+    <link rel="icon" type="image/png" href="shield.png">
+
+    <!-- LIBRARIES -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- TAILWIND CONFIG -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        dark: '#0B0F19',
+                        glass: '#1E293B',
+                        primary: '#6366f1',
+                        accent: '#06b6d4',
+                        danger: '#f43f5e',
+                        warning: '#f59e0b',
+                        success: '#10b981',
+                        purple: '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- CUSTOM STYLES -->
+    <style>
+        body { background-color: #0B0F19; color: #cbd5e1; overflow-x: hidden; }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Animations */
+        .animate-enter { animation: fadeUp 0.5s ease-out forwards; opacity: 0; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(20px); } }
+
+        .pulse-soft { animation: pulseSoft 2s infinite; }
+        @keyframes pulseSoft { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+        /* Meters */
+        .meter-container { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; position: relative; margin-top: 8px; }
+        .meter-fill { height: 100%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Media Meter */
+        .df-meter-bg { background: #0f172a; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+        .df-meter-fill { height: 100%; transition: width 1s ease; border-radius: 3px; }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary selection:text-white">
+
+    <div class="flex min-h-screen relative">
+
+        <!-- SIDEBAR -->
+        <aside class="fixed inset-y-0 left-0 w-72 glass-panel border-r-0 z-40 hidden md:flex flex-col justify-between h-full transition-transform">
+            <div class="p-8">
+                <!-- Branding -->
+                <div class="flex items-center gap-3 mb-10">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                        <img src="shield.png" alt="S" class="w-6 h-6 object-contain">
+                    </div>
+                    <div>
+                        <h1 class="text-white font-bold text-xl tracking-tight">SentinelSphere</h1>
+                        <p class="text-xs text-slate-500 font-bold tracking-widest text-accent uppercase">v3.5 MULTI-MODAL</p>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="space-y-2">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium bg-primary/10 text-white border border-primary/20 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all">
+                        <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('media')" id="nav-media" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-photo-film w-5"></i> Media Guard
+                    </button>
+                    <button onclick="switchTab('behavior')" id="nav-behavior" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-brain w-5"></i> Behavioral AI
+                    </button>
+                    <button onclick="switchTab('users')" id="nav-users" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-users-viewfinder w-5"></i> Risk Monitor
+                    </button>
+                    <button onclick="switchTab('logs')" id="nav-logs" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-file-code w-5"></i> Deep Logs
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Admin Profile & Status -->
+            <div class="p-6 border-t border-white/5 bg-black/20">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" class="w-10 h-10 rounded-full border-2 border-slate-700">
+                        <span id="backend-status-dot" class="absolute bottom-0 right-0 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full"></span>
+                    </div>
+                    <div>
+                        <p class="text-white text-sm font-semibold">System Admin</p>
+                        <p class="text-xs text-slate-500" id="backend-status-text">Connecting...</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="w-full md:ml-72 p-6 md:p-10 transition-all duration-500">
+
+            <!-- Top Header -->
+            <header class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6 animate-enter">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-1" id="page-title">Dashboard</h2>
+                    <p class="text-slate-400 text-sm">Real-time Anti-Bullying & Deepfake Defense</p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Digital Clock -->
+                    <div class="glass-panel px-5 py-2 rounded-xl border border-white/5 flex items-center gap-3 shadow-lg shadow-black/20">
+                        <i class="fa-regular fa-clock text-primary animate-pulse"></i>
+                        <div class="font-mono text-xl font-bold text-white tracking-widest tabular-nums" id="digital-clock">00:00:00</div>
+                        <div class="text-xs text-slate-400 font-bold uppercase tracking-wide" id="ampm">AM</div>
+                    </div>
+
+                    <!-- System Badge -->
+                    <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3 border-emerald-500/30">
+                        <span class="relative flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-xs font-bold text-emerald-400 tracking-wider hidden sm:block">SHIELD ACTIVE</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 1. DASHBOARD OVERVIEW -->
+            <div id="view-dashboard" class="view-section space-y-8 animate-enter">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl hover:border-primary/50 transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors"><i class="fa-solid fa-eye text-xl"></i></div>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-1" id="stat-scanned">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Content Scanned</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl hover:border-purple/50 transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors"><i class="fa-solid fa-mask text-xl"></i></div>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-1" id="stat-deepfakes">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Deepfakes Blocked</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl hover:border-danger/50 transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 rounded-xl bg-danger/10 text-danger group-hover:bg-danger group-hover:text-white transition-colors"><i class="fa-solid fa-ban text-xl"></i></div>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-1 text-danger" id="stat-abuse">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Bullying/NSFW</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl hover:border-warning/50 transition-all group">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 rounded-xl bg-yellow-500/10 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors"><i class="fa-solid fa-fire text-xl"></i></div>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-1 text-warning" id="stat-streak">0</h3>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Aggression Streak</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl">
+                        <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-primary"></i> Live Threat Vectors
+                        </h3>
+                        <div class="h-72 w-full"><canvas id="multiModalChart"></canvas></div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <h3 class="text-lg font-bold text-white mb-6">Threat Composition</h3>
+                        <div class="h-64 flex justify-center"><canvas id="riskDistChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. MEDIA GUARD VIEW -->
+            <div id="view-media" class="view-section hidden space-y-8 animate-enter">
+
+                <!-- MASTER TOGGLE -->
+                <div class="glass-panel p-6 rounded-2xl flex justify-between items-center border border-white/10">
+                    <div>
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved text-primary"></i> Media Shield</h3>
+                        <p class="text-sm text-slate-400">Deepfake, NSFW & Cyberbullying Protection</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest" id="media-status-text">ENABLED</span>
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="media-toggle" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <label for="media-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-transparent">
+                        <h3 class="text-white font-bold text-lg mb-2">Images Scanned</h3>
+                        <div class="text-3xl font-bold text-primary" id="stat-img-count">0</div>
+                        <div class="text-xs text-slate-400 mt-1">Real-time Extension Feed</div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl bg-gradient-to-br from-purple-900/40 to-transparent">
+                        <h3 class="text-white font-bold text-lg mb-2">Reels/Videos</h3>
+                        <div class="text-3xl font-bold text-purple-400" id="stat-vid-count">0</div>
+                        <div class="text-xs text-slate-400 mt-1">Frame Extraction Analysis</div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl bg-gradient-to-br from-red-900/40 to-transparent border border-danger/20">
+                        <h3 class="text-white font-bold text-lg mb-2">Active Threats</h3>
+                        <div class="text-3xl font-bold text-danger" id="stat-media-alerts">0</div>
+                        <div class="text-xs text-slate-400 mt-1">Deepfake + Abuse + Bullying</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="font-bold text-white text-lg mb-6 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                        Live Media Analysis Stream
+                    </h3>
+                    <!-- Dynamic Media Grid -->
+                    <div id="media-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="text-slate-500 text-sm col-span-full text-center py-10">Waiting for media submissions from extension...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. BEHAVIORAL AI VIEW -->
+            <div id="view-behavior" class="view-section hidden space-y-8 animate-enter">
+                <div class="glass-panel p-8 rounded-2xl border-l-4 border-primary">
+                    <h3 class="text-2xl font-bold text-white mb-2">Psychological Pressure Index</h3>
+                    <p class="text-slate-400 text-sm mb-6">Composite score measuring sustained aggression across platforms.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                        <div>
+                            <div class="flex justify-between text-sm mb-2 text-slate-300"><span>Network Stress Level</span><span class="text-white font-bold" id="pressure-val">Calculating...</span></div>
+                            <div class="meter-container"><div id="pressure-bar" class="meter-fill bg-gradient-to-r from-emerald-500 via-yellow-500 to-red-500" style="width: 0%"></div></div>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl text-center bg-white/5">
+                            <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Target Shift Pattern</div>
+                            <div class="text-2xl font-bold text-accent">Dynamic</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-6">Toxicity Heatmap</h3>
+                    <div class="h-64 w-full"><canvas id="heatmapChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- 4. USERS VIEW -->
+            <div id="view-users" class="view-section hidden space-y-6 animate-enter">
+                <div class="glass-panel rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b border-white/5 flex justify-between items-center">
+                        <h3 class="font-bold text-white text-lg">High Risk Users (v3.5 Scoring)</h3>
+                        <input type="text" placeholder="Search..." class="bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-primary">
+                    </div>
+                    <table class="w-full text-left text-sm text-slate-400">
+                        <thead class="bg-black/20 text-xs uppercase font-semibold text-slate-300">
+                            <tr><th class="px-6 py-4">User ID</th><th class="px-6 py-4">Platform</th><th class="px-6 py-4">Risk Score</th><th class="px-6 py-4">Status</th></tr>
+                        </thead>
+                        <tbody id="user-table-body" class="divide-y divide-white/5"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. LOGS VIEW -->
+            <div id="view-logs" class="view-section hidden space-y-6 animate-enter">
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="font-bold text-white text-lg mb-4">Deep Log Inspector</h3>
+                    <div id="live-feed" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTxvGydmaTlgJuYsJhdbfjToJY5XGwEzg",
+            authDomain: "sentinelspherelite.firebaseapp.com",
+            databaseURL: "https://sentinelspherelite-default-rtdb.firebaseio.com",
+            projectId: "sentinelspherelite",
+            storageBucket: "sentinelspherelite.firebasestorage.app",
+            messagingSenderId: "1059344930817",
+            appId: "1:1059344930817:web:273760f30d5a44611ec800",
+            measurementId: "G-VYNVS4TLPH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- MEDIA GUARD TOGGLE ---
+        const mediaToggle = document.getElementById('media-toggle');
+        const mediaStatusText = document.getElementById('media-status-text');
+
+        mediaToggle.addEventListener('change', (e) => {
+            const isActive = e.target.checked;
+            set(ref(db, 'config/media_guard_active'), isActive);
+            updateToggleUI(isActive);
+        });
+
+        function updateToggleUI(isActive) {
+            if(isActive) {
+                mediaStatusText.innerText = "ENABLED";
+                mediaStatusText.className = "text-xs font-bold text-emerald-400 uppercase tracking-widest";
+            } else {
+                mediaStatusText.innerText = "DISABLED";
+                mediaStatusText.className = "text-xs font-bold text-slate-500 uppercase tracking-widest";
+            }
+        }
+
+        // --- BACKEND HEALTH CHECK ---
+        async function checkBackend() {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/docs');
+                if (res.ok) {
+                    document.getElementById('backend-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full pulse-soft";
+                    document.getElementById('backend-status-text').innerText = "System Online";
+                    document.getElementById('backend-status-text').className = "text-xs text-emerald-400";
+                }
+            } catch (e) { 
+                console.log("Backend offline"); 
+                document.getElementById('backend-status-dot').className = "absolute bottom-0 right-0 w-3 h-3 bg-red-500 border-2 border-slate-900 rounded-full";
+                document.getElementById('backend-status-text').innerText = "Offline";
+                document.getElementById('backend-status-text').className = "text-xs text-red-400";
+            }
+        }
+        setInterval(checkBackend, 5000); checkBackend();
+
+        // --- DIGITAL CLOCK ---
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            document.getElementById('digital-clock').innerText = `${String(hours).padStart(2,'0')}:${minutes}:${seconds}`;
+            document.getElementById('ampm').innerText = ampm;
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // --- Charts ---
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+
+        // Multi-Modal Chart
+        const ctxMulti = document.getElementById('multiModalChart').getContext('2d');
+        const multiChart = new Chart(ctxMulti, {
+            type: 'bar',
+            data: {
+                labels: ['Text Toxicity', 'Deepfake Prob', 'Visual Abuse', 'OCR Text Tox'],
+                datasets: [{ 
+                    label: 'Risk Intensity', 
+                    data: [0,0,0,0], 
+                    backgroundColor: ['#6366f1', '#a855f7', '#f43f5e', '#f59e0b'], 
+                    borderRadius: 6 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+        });
+
+        const ctxRiskDist = document.getElementById('riskDistChart').getContext('2d');
+        const riskDistChart = new Chart(ctxRiskDist, {
+            type: 'doughnut',
+            data: { labels: ['Calm', 'Aggressive', 'Critical'], datasets: [{ data: [1, 0, 0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+
+        const ctxHeatmap = document.getElementById('heatmapChart').getContext('2d');
+        const heatmapChart = new Chart(ctxHeatmap, {
+            type: 'bar',
+            data: { labels: ['00','04','08','12','16','20','24'], datasets: [{ label: 'Intensity', data: [0,0,0,0,0,0,0], backgroundColor: '#f43f5e', borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // --- Data Variables ---
+        let imageCache = {}, videoCache = {};
+        let averageTextRisk = 0;  
+
+        // --- RENDER MEDIA FEED ---
+        const renderMedia = (images = {}, videos = {}) => {
+            const imgList = Object.values(images || {});
+            const vidList = Object.values(videos || {});
+            const allMedia = [...imgList, ...vidList].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            document.getElementById('stat-img-count').innerText = imgList.length;
+            document.getElementById('stat-vid-count').innerText = vidList.length;
+            
+            // Count incidents
+            const threats = allMedia.filter(m => m.authenticity_label !== 'Real').length;
+            const abuseCount = allMedia.filter(m => m.abuse_probability > 50 || m.ocr_text_toxicity > 0.6).length;
+            
+            document.getElementById('stat-media-alerts').innerText = threats;
+            document.getElementById('stat-abuse').innerText = abuseCount;
+            document.getElementById('stat-deepfakes').innerText = allMedia.filter(m => m.deepfake_probability > 50).length;
+
+            // Chart Data Computation
+            const avgDeepfake = allMedia.reduce((a,c) => a + (c.deepfake_probability||0), 0) / (allMedia.length||1);
+            const avgAbuse = allMedia.reduce((a,c) => a + (c.abuse_probability||0), 0) / (allMedia.length||1);
+            const avgOcr = allMedia.reduce((a,c) => a + ((c.ocr_text_toxicity||0)*100), 0) / (allMedia.length||1);
+            
+            multiChart.data.datasets[0].data = [averageTextRisk, avgDeepfake, avgAbuse, avgOcr];
+            multiChart.update();
+
+            const container = document.getElementById('media-feed');
+            if(allMedia.length === 0) {
+                container.innerHTML = '<div class="text-slate-500 text-sm col-span-full text-center py-10">Waiting for extension data...</div>';
+                return;
+            }
+
+            container.innerHTML = allMedia.map(m => {
+                const isVideo = m.media_type === 'video';
+                const label = m.authenticity_label || 'Real';
+                const icon = isVideo ? 'fa-film' : 'fa-image';
+
+                // Determine Styling
+                let badgeColor = "bg-success/20 text-success border-success/30";
+                let borderColor = "border-white/5";
+                
+                if (label.includes('Deepfake')) {
+                    badgeColor = "bg-purple-500/20 text-purple-400 border-purple-500/30";
+                    borderColor = "border-purple-500/50";
+                } 
+                if (label.includes('Abusive') || label.includes('Weaponized')) {
+                    badgeColor = "bg-danger/20 text-danger border-danger/30";
+                    borderColor = "border-danger/50 shadow-[0_0_15px_rgba(244,63,94,0.1)]";
+                }
+
+                return `
+                <div class="glass-panel p-5 rounded-2xl border ${borderColor} transition-all relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
+                                <i class="fa-solid ${icon} text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-white uppercase">${isVideo ? 'Reel/Video' : 'Social Image'}</div>
+                                <div class="text-[10px] text-slate-500 font-mono">${new Date(m.timestamp).toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] uppercase font-bold px-2 py-1 rounded border ${badgeColor}">${label}</span>
+                    </div>
+
+                    <div class="space-y-3 mb-4">
+                        <!-- Deepfake Meter -->
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1 text-slate-400 uppercase tracking-wider">
+                                <span>Deepfake Probability</span>
+                                <span class="text-white font-bold">${(m.deepfake_probability||0).toFixed(1)}%</span>
+                            </div>
+                            <div class="df-meter-bg">
+                                <div class="df-meter-fill ${(m.deepfake_probability > 50) ? 'bg-purple-500' : 'bg-slate-600'}" style="width: ${m.deepfake_probability}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Abuse Meter -->
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1 text-slate-400 uppercase tracking-wider">
+                                <span>Bullying / NSFW</span>
+                                <span class="text-white font-bold">${(m.abuse_probability||0).toFixed(1)}%</span>
+                            </div>
+                            <div class="df-meter-bg">
+                                <div class="df-meter-fill ${(m.abuse_probability > 50) ? 'bg-danger' : 'bg-slate-600'}" style="width: ${m.abuse_probability}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OCR Section -->
+                    <div class="bg-black/40 p-3 rounded-lg text-xs border border-white/5">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-slate-500"><i class="fa-solid fa-font text-accent mr-1"></i> Text Analysis</span>
+                            <span class="${(m.ocr_text_toxicity > 0.6) ? 'text-danger' : 'text-success'} font-bold">${((m.ocr_text_toxicity||0)*100).toFixed(0)}% Toxic</span>
+                        </div>
+                        <div class="text-slate-300 italic truncate" title="${m.extracted_text || 'No text detected'}">
+                            "${m.extracted_text ? m.extracted_text.substring(0, 35) + '...' : 'No text detected'}"
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        // Listeners for media
+        onValue(ref(db, 'media_analysis/images'), (snap) => { imageCache = snap.val() || {}; renderMedia(imageCache, videoCache); });
+        onValue(ref(db, 'media_analysis/videos'), (snap) => { videoCache = snap.val() || {}; renderMedia(imageCache, videoCache); });
+
+        // 3. Text Logs Logic
+        onValue(query(ref(db, 'logs'), limitToLast(50)), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            const logs = Object.values(data).reverse();
+            
+            // Render Logs
+            document.getElementById('live-feed').innerHTML = logs.map(l => {
+                let borderColor = l.risk_level === 'Aggressive' ? 'border-danger/40' : 'border-white/5';
+                return `<div class="p-4 glass-panel rounded-xl border ${borderColor} hover:bg-white/5 transition-all group">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold bg-slate-700 text-white px-2 py-0.5 rounded uppercase tracking-wider">${l.platform || 'WEB'}</span>
+                            <span class="text-xs text-slate-500">${new Date(l.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                        <span class="text-xs font-bold ${l.risk_level === 'Aggressive' ? 'text-danger' : 'text-emerald-400'}">${l.risk_level}</span>
+                    </div>
+                    <p class="text-slate-300 text-sm mb-2 italic">"${l.content}"</p>
+                    <div class="text-[10px] text-slate-500 font-mono">Toxicity Score: ${l.risk_score}%</div>
+                </div>`;
+            }).join('');
+
+            // Calculate Stats for Users Table
+            const uniqueUsers = {};
+            logs.forEach(l => {
+                if(!uniqueUsers[l.user_id]) uniqueUsers[l.user_id] = { id: l.user_id, platform: l.platform, maxRisk: 0 };
+                if(l.risk_score > uniqueUsers[l.user_id].maxRisk) uniqueUsers[l.user_id].maxRisk = l.risk_score;
+            });
+
+            document.getElementById('user-table-body').innerHTML = Object.values(uniqueUsers).map(u => {
+                let badgeClass = u.maxRisk > 70 ? 'text-rose-400 bg-rose-500/10' : 'text-emerald-400 bg-emerald-500/10';
+                return `<tr class="hover:bg-white/5 border-b border-white/5">
+                    <td class="px-6 py-4 text-xs font-mono">${u.id}</td>
+                    <td class="px-6 py-4 uppercase text-xs font-bold text-slate-300">${u.platform}</td>
+                    <td class="px-6 py-4 font-bold text-white">${u.maxRisk}%</td>
+                    <td class="px-6 py-4"><span class="${badgeClass} px-3 py-1 rounded-full text-xs font-bold">${u.maxRisk > 70 ? 'CRITICAL' : 'SAFE'}</span></td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('stat-scanned').innerText = logs.length.toLocaleString();
+
+            // Avg Text Risk for Chart
+            const scores = logs.map(l => l.risk_score);
+            averageTextRisk = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
+            
+            // Trigger chart update
+            renderMedia(imageCache, videoCache);
+        });
+
+        // Tab Logic
+        window.switchTab = (id) => {
+            document.querySelectorAll('.view-section').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-enter'); });
+            const active = document.getElementById(`view-${id}`);
+            if(active) { active.classList.remove('hidden'); void active.offsetWidth; active.classList.add('animate-enter'); }
+            document.getElementById('page-title').innerText = id === 'media' ? 'Media Guard' : (id.charAt(0).toUpperCase() + id.slice(1));
+            document.querySelectorAll('.nav-item').forEach(btn => btn.className = 'nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent');
+            const activeBtn = document.getElementById(`nav-${id}`);
+            if(activeBtn) activeBtn.className = 'nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium bg-primary/10 text-white border border-primary/20 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all';
+        };
+    </script>
+</body>
+</html>

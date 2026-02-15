@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "SentinelSphere | Cyberbullying & Deepfake Defense",
+  "version": "3.5.0",
+  "description": "Multi-modal AI protection. Detects Deepfakes, NSFW content, and Cyberbullying in real-time.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "shield.png"
+  },
+  "icons": {
+    "16": "shield.png",
+    "48": "shield.png",
+    "128": "shield.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.instagram.com/*",
+        "https://www.snapchat.com/*",
+        "https://twitter.com/*",
+        "https://x.com/*",
+        "https://www.facebook.com/*",
+        "https://www.linkedin.com/*",
+        "https://www.reddit.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
