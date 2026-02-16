@@ -11,6 +11,8 @@
     <!-- LIBRARIES -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -36,6 +38,13 @@
                     },
                     animation: {
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-in': 'slideIn 0.3s ease-out forwards'
+                    },
+                    keyframes: {
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        }
                     }
                 }
             }
@@ -93,9 +102,15 @@
         /* Mobile Sidebar Transition */
         .sidebar-mobile { transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
         .sidebar-mobile.open { transform: translateX(0); }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body class="antialiased selection:bg-accent selection:text-black">
+
+    <!-- TOAST NOTIFICATIONS CONTAINER -->
+    <div id="toast-container"></div>
 
     <!-- ==================== 1. LOGIN OVERLAY ==================== -->
     <div id="login-overlay" class="flex items-center justify-center">
@@ -150,36 +165,59 @@
 
         <!-- SIDEBAR -->
         <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass-panel border-r-0 z-40 sidebar-mobile md:translate-x-0 md:flex flex-col justify-between h-full bg-dark/95 backdrop-blur-xl md:bg-transparent md:backdrop-filter-none pt-20 md:pt-0">
-            <div class="p-8">
-                <!-- Branding (Desktop) -->
-                <div class="hidden md:flex items-center gap-3 mb-10">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                        <img src="shield.png" alt="S" class="w-6 h-6 object-contain">
+            <div>
+                <div class="p-8">
+                    <!-- Branding (Desktop) -->
+                    <div class="hidden md:flex items-center gap-3 mb-10">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                            <img src="shield.png" alt="S" class="w-6 h-6 object-contain">
+                        </div>
+                        <div>
+                            <h1 class="text-white font-bold text-xl tracking-tight">SecureGuard</h1>
+                            <p class="text-[10px] text-slate-500 font-bold tracking-widest text-accent uppercase">v3.5 INTELLIGENCE</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 class="text-white font-bold text-xl tracking-tight">SecureGuard</h1>
-                        <p class="text-[10px] text-slate-500 font-bold tracking-widest text-accent uppercase">v3.5 INTELLIGENCE</p>
-                    </div>
+
+                    <!-- Navigation -->
+                    <nav class="space-y-2">
+                        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium bg-primary/10 text-white border border-primary/20 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all">
+                            <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+                        </button>
+                        <button onclick="switchTab('media')" id="nav-media" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                            <i class="fa-solid fa-photo-film w-5"></i> Media Guard
+                        </button>
+                        <button onclick="switchTab('behavior')" id="nav-behavior" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                            <i class="fa-solid fa-brain w-5"></i> Behavioral AI
+                        </button>
+                        <button onclick="switchTab('users')" id="nav-users" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                            <i class="fa-solid fa-users-viewfinder w-5"></i> Risk Monitor
+                        </button>
+                        <button onclick="switchTab('logs')" id="nav-logs" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
+                            <i class="fa-solid fa-file-code w-5"></i> Deep Logs
+                        </button>
+                    </nav>
                 </div>
 
-                <!-- Navigation -->
-                <nav class="space-y-2">
-                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium bg-primary/10 text-white border border-primary/20 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all">
-                        <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
-                    </button>
-                    <button onclick="switchTab('media')" id="nav-media" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-photo-film w-5"></i> Media Guard
-                    </button>
-                    <button onclick="switchTab('behavior')" id="nav-behavior" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-brain w-5"></i> Behavioral AI
-                    </button>
-                    <button onclick="switchTab('users')" id="nav-users" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-users-viewfinder w-5"></i> Risk Monitor
-                    </button>
-                    <button onclick="switchTab('logs')" id="nav-logs" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-file-code w-5"></i> Deep Logs
-                    </button>
-                </nav>
+                <!-- RESOURCE MONITOR (NEW FEATURE) -->
+                <div class="px-8 pb-4">
+                    <div class="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> System Resources
+                    </div>
+                    <div class="space-y-3 p-4 glass-panel rounded-xl bg-black/20">
+                        <div>
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span>GPU (RTX 3050)</span><span id="gpu-val" class="text-accent font-mono">0%</span></div>
+                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="gpu-bar" class="h-full bg-purple-500 transition-all duration-500" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span>VRAM (4GB)</span><span id="vram-val" class="text-primary font-mono">0GB</span></div>
+                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="vram-bar" class="h-full bg-primary transition-all duration-500" style="width: 0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span>CPU Usage</span><span id="cpu-val" class="text-warning font-mono">0%</span></div>
+                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div id="cpu-bar" class="h-full bg-warning transition-all duration-500" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Admin Profile & Logout -->
@@ -213,6 +251,11 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-4">
+                    <!-- REPORT GENERATION (NEW FEATURE) -->
+                    <button onclick="generateReport()" class="glass-panel px-5 py-2 rounded-xl border border-white/5 text-slate-300 hover:text-white hover:border-accent hover:shadow-[0_0_15px_rgba(0,255,153,0.2)] transition-all flex items-center gap-2 text-sm font-medium grow sm:grow-0">
+                        <i class="fa-solid fa-file-pdf text-accent"></i> Download Report
+                    </button>
+
                     <!-- Digital Clock -->
                     <div class="glass-panel px-5 py-2 rounded-xl border border-white/5 flex items-center gap-3 shadow-lg shadow-black/20 grow sm:grow-0 justify-center">
                         <i class="fa-regular fa-clock text-primary animate-pulse"></i>
@@ -599,7 +642,99 @@
         let imageCache = {}, videoCache = {};
         let averageTextRisk = 0;  
 
-        // --- Users Logic ---
+        // --- Resource Monitor Logic ---
+        function simulateResources() {
+            // Random fluctuations
+            const gpu = Math.floor(Math.random() * (45 - 20) + 20); // 20-45% base
+            const vram = (Math.random() * (3.8 - 2.5) + 2.5).toFixed(1); // 2.5-3.8GB
+            const cpu = Math.floor(Math.random() * (30 - 10) + 10); // 10-30% base
+
+            document.getElementById('gpu-val').innerText = gpu + "%";
+            document.getElementById('gpu-bar').style.width = gpu + "%";
+            
+            document.getElementById('vram-val').innerText = vram + "GB / 4GB";
+            document.getElementById('vram-bar').style.width = (vram/4 * 100) + "%";
+
+            document.getElementById('cpu-val').innerText = cpu + "%";
+            document.getElementById('cpu-bar').style.width = cpu + "%";
+        }
+        setInterval(simulateResources, 2000);
+
+        // --- PDF Report Generator ---
+        window.generateReport = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(5, 10, 20);
+            doc.rect(0, 0, 210, 297, "F"); // Dark BG
+            
+            doc.setTextColor(0, 255, 153);
+            doc.setFontSize(22);
+            doc.text("SECURE_GUARD INTELLIGENCE REPORT", 20, 20);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(200, 200, 200);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+            doc.text("Case ID: #" + Math.floor(Math.random()*100000), 20, 36);
+            
+            doc.setDrawColor(99, 102, 241);
+            doc.line(20, 40, 190, 40);
+            
+            // Statistics
+            const scanned = document.getElementById('stat-scanned').innerText;
+            const threats = document.getElementById('stat-deepfakes').innerText;
+            
+            doc.setFontSize(14);
+            doc.setTextColor(255, 255, 255);
+            doc.text("EXECUTIVE SUMMARY", 20, 50);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(200, 200, 200);
+            doc.text(`- Total Content Scanned: ${scanned}`, 25, 60);
+            doc.text(`- Confirmed Threats Detected: ${threats}`, 25, 68);
+            doc.text(`- System Status: ONLINE & MONITORING`, 25, 76);
+            
+            // Log Snapshot
+            doc.text("RECENT INCIDENT LOGS (LAST 5)", 20, 95);
+            let y = 105;
+            const logs = Array.from(document.querySelectorAll('#live-feed div.glass-panel')).slice(0, 5);
+            
+            logs.forEach((log) => {
+                const txt = log.innerText.replace(/[\n\r]+/g, ' ').substring(0, 80);
+                doc.text(`• ${txt}...`, 25, y);
+                y += 10;
+            });
+            
+            doc.save("SecureGuard_Report.pdf");
+        };
+
+        // --- Live Notification Logic ---
+        function showToast(title, msg, type="info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let color = type === 'danger' ? 'border-red-500 bg-red-500/10' : 'border-accent bg-accent/10';
+            let icon = type === 'danger' ? 'fa-triangle-exclamation' : 'fa-shield-cat';
+            
+            toast.className = `glass-panel p-4 rounded-xl border-l-4 ${color} w-72 animate-slide-in flex items-start gap-3 shadow-2xl backdrop-blur-md`;
+            toast.innerHTML = `
+                <div class="mt-1 ${type === 'danger' ? 'text-red-500' : 'text-accent'}"><i class="fa-solid ${icon}"></i></div>
+                <div>
+                    <h4 class="text-white font-bold text-sm">${title}</h4>
+                    <p class="text-slate-400 text-xs">${msg}</p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Remove after 4s
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        // --- Users Logic (With Toast Trigger) ---
         onValue(ref(db, 'users'), (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -715,7 +850,7 @@
                     </div>
                     <div class="mb-4">
                         <div class="flex justify-between text-xs mb-1 text-slate-400">
-                            <span>Artificial Probability</span>
+                            <span>Deepfake Risk</span>
                             <span class="text-white font-bold">${score ? score.toFixed(1) : '0.0'}%</span>
                         </div>
                         <div class="df-meter-bg bg-black/50 h-1.5 rounded-full overflow-hidden">
@@ -754,6 +889,13 @@
             const data = snapshot.val();
             if (!data) return;
             const logs = Object.values(data).reverse();
+            
+            // Check for new High Risk item (simple check: if latest log is new)
+            const latest = logs[0];
+            if (latest && latest.risk_level === 'Escalating' && (Date.now() - new Date(latest.timestamp).getTime() < 10000)) {
+                showToast("HIGH RISK DETECTED", `User sent toxic message on ${latest.platform}`, "danger");
+            }
+
             document.getElementById('live-feed').innerHTML = logs.map(l => {
                 const reasons = l.explanation?.reason?.join(", ") || "Manual Flag";
                 let borderColor = l.risk_level === 'Escalating' ? 'border-danger/40' : 'border-white/5';
