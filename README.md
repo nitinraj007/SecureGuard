@@ -1,4 +1,5 @@
 🛡️ SecureGuard
+
 ✨ AI‑Powered Multi‑Modal Cyber Safety & Behavioral Intelligence System
 🚨 Detecting digital harm before it escalates.
 
@@ -49,6 +50,7 @@ The architecture is modular and can be extended to other platforms with code mod
 ✨ Context‑aware analysis
 
 📈 Behavioral Intelligence Engine
+
 🔁 Aggression streak tracking
 
 📊 Escalation monitoring
@@ -67,7 +69,9 @@ into:
 
 “Detecting behavioral harm patterns.”
 
+
 📊 Real‑Time Dashboard
+
 📌 Total content scanned
 
 📌 Risk trend graphs
@@ -83,6 +87,7 @@ into:
 Clean, modern, intelligence‑style interface.
 
 🏗️ System Architecture
+
 User Input (Instagram Web)
 
         ↓
@@ -108,7 +113,9 @@ Firebase Database
         ↓
 
 Analytics Dashboard
+
 🧠 Offline AI Models
+
 ⚠️ This project uses locally downloaded AI models.
 
 On first run:
@@ -126,6 +133,7 @@ All inference runs locally after download.
 Use responsibly and ensure your system supports AI workloads.
 
 ☁️ Recommended Database – Firebase
+
 SecureGuard is designed to work best with:
 
 🔥 Firebase Realtime Database
@@ -139,6 +147,7 @@ Recommended setup:
 🔹 Firebase Authentication
 
 🔐 Authentication Setup
+
 To enable login:
 
 1️⃣ Go to Firebase Console
@@ -151,27 +160,35 @@ To enable login:
 
 You can modify authentication logic in the code as needed.
 
-⚙️ Installation Guide
-📥 Clone Repository
+⚙️ Installation Guide -
+
+📥 Clone Repository :
+
 git clone https://github.com/your-username/secureguard.git
-cd secureguard
-🖥 Backend Setup
+
+cd secureguard 
+
+🖥 Backend Setup :
+
 cd backend
+
 pip install -r requirements.txt
+
 Run server:
 
 python -m uvicorn main:app --reload
+
 Swagger Docs:
 
 http://127.0.0.1:8000/docs
+
 🌐 Frontend Dashboard
-Open:
+Open: frontend/index.html
 
-frontend/index.html
-Or run:
+Or run: python -m http.server 5500
 
-python -m http.server 5500
 🧩 Chrome Extension Setup
+
 1️⃣ Open Chrome
 
 2️⃣ Go to chrome://extensions
@@ -185,6 +202,7 @@ python -m http.server 5500
 The extension captures input on Instagram Web and sends it to the backend for analysis.
 
 ⚠️ Ethical & Legal Warning
+
 🚨 IMPORTANT 🚨
 
 This tool captures user input events for AI moderation analysis.
@@ -230,21 +248,6 @@ By using this project, you agree to:
 Always use AI responsibly.
 
 Always act ethically.
-
-🔧 Customization
-You can:
-
-🛠 Modify AI models
-
-📊 Adjust behavioral risk logic
-
-🌍 Extend to new platforms
-
-🔐 Improve authentication flow
-
-☁️ Deploy backend to cloud
-
-📈 Enhance analytics modules
 
 👤 Author
 ✨ Made by Me ✨
