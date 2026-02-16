@@ -1,4 +1,5 @@
 🛡️ SecureGuard
+
 ✨ AI‑Powered Multi‑Modal Cyber Safety & Behavioral Intelligence System
 🚨 Detecting digital harm before it escalates.
 
